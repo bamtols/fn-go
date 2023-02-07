@@ -11,14 +11,7 @@ import (
 	"path/filepath"
 )
 
-type (
-	YamlVersion struct {
-		Major uint `yaml:"major"`
-		Minor uint `yaml:"minor"`
-		Patch uint `yaml:"patch"`
-		Save  uint `yaml:"save"`
-	}
-)
+type ()
 
 func main() {
 	cmd := &cobra.Command{
@@ -83,20 +76,20 @@ func patchUp() (root *cobra.Command) {
 	return
 }
 
-func loadYaml(branch string) (res *YamlVersion) {
+func loadYaml(branch string) (res *Version) {
 	fp := getFilePath(branch)
 	log.Printf("loadYaml: fp=%s\n", fp)
 
 	file := fnPanic.HasErrorOrValue(os.Open(fp))
 	defer file.Close()
 
-	res = &YamlVersion{}
+	res = &Version{}
 	fnPanic.HasError(yaml.NewDecoder(file).Decode(res))
 
 	return
 }
 
-func saveVersion(branch string, yamlVersion *YamlVersion) {
+func saveVersion(branch string, yamlVersion *Version) {
 	fp := getFilePath(branch)
 	fnPanic.HasError(os.Remove(fp))
 	log.Printf("delete file: fp=%s\n", fp)
@@ -111,6 +104,6 @@ func getFilePath(fileName string) string {
 	return filepath.Join(pwd, fmt.Sprintf("version/%s.yaml", fileName))
 }
 
-func (x *YamlVersion) Tag() string {
+func (x *Version) Tag() string {
 	return fmt.Sprintf("v%d.%d.%d", x.Major, x.Minor, x.Patch)
 }
