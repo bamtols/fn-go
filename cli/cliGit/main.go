@@ -50,13 +50,13 @@ func saveUp() (root *cobra.Command) {
 		}
 
 		gitTag := fmt.Sprintf("%s-%d", gitBranch, data.List[gitBranch])
+		fnPanic.HasError(mng.Save(data))
 
-		fnPanic.HasError(exec.Command("git", "commit", "--all", "-m", fmt.Sprintf("%s\n%s version up", gitTag, commitMsg)).Run())
+		fnPanic.HasError(exec.Command("git", "commit", "--all", "-m", fmt.Sprintf("%s\n%s", gitTag, commitMsg)).Run())
 		fnPanic.HasError(exec.Command("git", "push").Run())
 		fnPanic.HasError(exec.Command("git", "tag", gitTag).Run())
 		fnPanic.HasError(exec.Command("git", "push", "origin", gitTag).Run())
 
-		fnPanic.HasError(mng.Save(data))
 	}
 
 	return
