@@ -92,14 +92,11 @@ func (x *FileMng) Save(data *FileFormat) (err error) {
 }
 
 func (x *FileMng) hasFile() bool {
-	if _, err := os.Stat(x.fp); err != nil {
-		return false
-	}
-
-	return true
+	_, err := os.Stat(x.fp)
+	return err == nil
 }
 
-func (x *FileMng) getGitVersion() (*Version, error) {
+func (x *FileMng) GetGitBranchNm() (*Version, error) {
 	// format v0.0.0 방식
 	byteStr, err := exec.Command("git", "branch", "--show-current").Output()
 	if err != nil {
@@ -111,10 +108,11 @@ func (x *FileMng) getGitVersion() (*Version, error) {
 
 func NewVersion(vers string) (res *Version, err error) {
 	res = &Version{
-		Raw: vers,
+		Raw: strings.Replace(vers, "\n", "", -1),
 	}
-
-	ls := strings.Split(strings.Replace(vers, "v", "", 1), ".")
+	vers = strings.Replace(vers, "\n", "", -1)
+	vers = strings.Replace(vers, "v", "", 1)
+	ls := strings.Split(vers, ".")
 
 	if len(ls) != 3 {
 		return nil, fmt.Errorf("invalidFormat: version=%s", vers)
