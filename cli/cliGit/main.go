@@ -4,11 +4,7 @@ import (
 	"fmt"
 	"github.com/bamtols/fn-go/fn/fnPanic"
 	"github.com/spf13/cobra"
-	"gopkg.in/yaml.v3"
-	"log"
-	"os"
 	"os/exec"
-	"path/filepath"
 )
 
 type ()
@@ -18,7 +14,7 @@ func main() {
 		Use: "cliGit",
 	}
 
-	cmd.AddCommand(patchUp())
+	cmd.AddCommand(saveUp())
 
 	fnPanic.HasError(cmd.Execute())
 }
@@ -28,82 +24,40 @@ func saveUp() (root *cobra.Command) {
 		Use: "save",
 	}
 
-	panic("notImpl")
-}
+	fileNm := "tags.yaml"
+	fileNmFlagNm := "file"
+	commitMsg := ""
+	commitMsgFlagNm := "msg"
 
-func getYaml() {
-	pwd := fnPanic.HasErrorOrValue(os.Getwd())
-	fileNm := string(fnPanic.HasErrorOrValue(exec.Command("git", "branch", "--show-current").Output()))
-	fileNm = filepath.Join(pwd, "version", fmt.Sprintf("%s.yaml", fileNm))
-
-	_, err := os.Stat(fileNm)
-	if err == nil {
-	} else {
-
-	}
-}
-
-func patchUp() (root *cobra.Command) {
-	root = &cobra.Command{
-		Use: "patch",
-	}
-
-	fileName := ""
-	root.Flags().StringVarP(
-		&fileName,
-		"fileName",
-		"v",
-		fileName,
-		fmt.Sprintf("fileName name: example=v1.0"),
-	)
+	root.Flags().StringVar(&fileNm, fileNmFlagNm, fileNm, "filename")
+	root.Flags().StringVar(&commitMsg, commitMsgFlagNm, commitMsg, "commit message")
 
 	root.Run = func(cmd *cobra.Command, args []string) {
-		if fileName == "" {
-			log.Panic("fileName not found")
+		fileNm = fnPanic.HasErrorOrValue(cmd.Flags().GetString(fileNmFlagNm))
+		commitMsg = fnPanic.HasErrorOrValue(cmd.Flags().GetString(commitMsgFlagNm))
+
+		mng := NewFileMng(fileNm)
+
+		data := fnPanic.HasErrorOrValue(mng.Open())
+
+		gitBranch := fnPanic.HasErrorOrValue(mng.GetGitBranchNm()).Raw
+		_, isOk := data.List[gitBranch]
+
+		if !isOk {
+			data.List[gitBranch] = 1
+		} else {
+			data.List[gitBranch] += 1
 		}
 
-		f := loadYaml(fileName)
-		f.Patch += 1
-		saveVersion(fileName, f)
+		gitTag := fmt.Sprintf("%s-%d", gitBranch, data.List[gitBranch])
 
-		fnPanic.HasError(exec.Command("git", "commit", "--all", "-m", fmt.Sprintf("%s version up", f.Tag())).Run())
+		fnPanic.HasError(exec.Command("git", "commit", "--all", "-m", fmt.Sprintf("%s\n%s version up", gitTag, commitMsg)).Run())
 		fnPanic.HasError(exec.Command("git", "push").Run())
-		fnPanic.HasError(exec.Command("git", "tag", f.Tag()).Run())
-		fnPanic.HasError(exec.Command("git", "push", "origin", f.Tag()).Run())
+		fnPanic.HasError(exec.Command("git", "tag", gitTag).Run())
+		fnPanic.HasError(exec.Command("git", "push", "origin", gitTag).Run())
 
+		fnPanic.HasError(mng.Save(data))
 	}
 
 	return
-}
-
-func loadYaml(branch string) (res *Version) {
-	fp := getFilePath(branch)
-	log.Printf("loadYaml: fp=%s\n", fp)
-
-	file := fnPanic.HasErrorOrValue(os.Open(fp))
-	defer file.Close()
-
-	res = &Version{}
-	fnPanic.HasError(yaml.NewDecoder(file).Decode(res))
-
-	return
-}
-
-func saveVersion(branch string, yamlVersion *Version) {
-	fp := getFilePath(branch)
-	fnPanic.HasError(os.Remove(fp))
-	log.Printf("delete file: fp=%s\n", fp)
-
-	file := fnPanic.HasErrorOrValue(os.Create(fp))
-	fnPanic.HasError(yaml.NewEncoder(file).Encode(yamlVersion))
-	log.Printf("saved: branch=%s, major=%d, minor=%d, patch=%d\n", branch, yamlVersion.Major, yamlVersion.Minor, yamlVersion.Patch)
-}
-
-func getFilePath(fileName string) string {
-	pwd := fnPanic.HasErrorOrValue(os.Getwd())
-	return filepath.Join(pwd, fmt.Sprintf("version/%s.yaml", fileName))
-}
-
-func (x *Version) Tag() string {
-	return fmt.Sprintf("v%d.%d.%d", x.Major, x.Minor, x.Patch)
 }
