@@ -108,10 +108,10 @@ func (x *FileMng) GetGitBranchNm() (*Version, error) {
 
 func NewVersion(vers string) (res *Version, err error) {
 	res = &Version{
-		Raw: vers,
+		Raw: strings.Replace(vers, "\n", "", -1),
 	}
-	vers = strings.Replace(vers, "v", "", 1)
 	vers = strings.Replace(vers, "\n", "", -1)
+	vers = strings.Replace(vers, "v", "", 1)
 	ls := strings.Split(vers, ".")
 
 	if len(ls) != 3 {
