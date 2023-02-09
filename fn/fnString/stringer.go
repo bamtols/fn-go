@@ -38,6 +38,11 @@ func (x *Chain) Plural() *Chain {
 	return x
 }
 
+func (x *Chain) Singular() *Chain {
+	x.v = ToSingular(x.v)
+	return x
+}
+
 func (x *Chain) String() string {
 	return x.v
 }

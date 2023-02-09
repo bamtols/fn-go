@@ -19,6 +19,11 @@ func ToPlural(s string) string {
 	return client.Plural(s)
 }
 
+func ToSingular(s string) string {
+	client := pluralize.NewClient()
+	return client.Singular(s)
+}
+
 func ToCamelCase(s string, startUpperCase bool) string {
 	s = strings.TrimSpace(s)
 	if s == "" {
